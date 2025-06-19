@@ -19,6 +19,7 @@ namespace CropTogether.Input
                     _instance = gameObject.AddComponent<GamerInput>();
                     DontDestroyOnLoad(gameObject);
                 }
+
                 return _instance;
             }
         }
