@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CropTogether.Input;
+using Mirror;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -10,28 +11,22 @@ using UnityEngine.InputSystem;
 namespace CropTogether
 {
     [RequireComponent(typeof(SpriteRenderer))]
+    [RequireComponent(typeof(Collider2D))]
     public class Planet : MonoBehaviour
     {
-        private InputAction _rightClickAction;
+        private static bool _isInit;
+        private static InputAction _rightClickAction;
 
         private void Awake()
         {
-            _rightClickAction = GamerInput.Controls.UI.RightClick;
+            if (!_isInit)
+            {
+                _rightClickAction = GamerInput.Controls.UI.RightClick;
+                _rightClickAction.performed += OnRightClick;
+            }
         }
 
-        private void OnEnable()
-        {
-            _rightClickAction.performed += OnRightClick;
-            _rightClickAction.Enable();
-        }
-
-        private void OnDisable()
-        {
-            _rightClickAction.performed -= OnRightClick;
-            _rightClickAction.Disable();
-        }
-
-        private void OnRightClick(InputAction.CallbackContext context)
+        private static void OnRightClick(InputAction.CallbackContext context)
         {
             // 检查是否点击了UI元素
             if (EventSystem.current.IsPointerOverGameObject())
@@ -47,11 +42,12 @@ namespace CropTogether
                 RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
 
                 // 检查是否点击了这个Sprite
-                if (hit.collider != null && hit.collider.gameObject == gameObject)
+                if (hit.collider != null &&
+                    hit.collider.gameObject.TryGetComponent(typeof(Planet), out Component planet))
                 {
                     // ShowContextMenu(mousePosition);
                     Debug.Log("点到了");
-                    Fun1(transform.position);
+                    Fun1(planet.transform.position);
                 }
                 // else if (currentMenu != null)
                 // {
@@ -60,13 +56,12 @@ namespace CropTogether
             }
         }
 
-        private void Fun1(Vector2 position)
+        private static void Fun1(Vector2 position)
         {
-            GameObject[] player = GameObject.FindGameObjectsWithTag("Player");
-            Debug.Log(player);
-            foreach (GameObject p in player)
+            GameObject localPlayer = NetworkClient.localPlayer?.gameObject;
+            if (localPlayer != null)
             {
-                p.GetComponent<ShipController>().targetPosition = position;
+                localPlayer.GetComponent<ShipController>().targetPosition = position;
             }
         }
     }
